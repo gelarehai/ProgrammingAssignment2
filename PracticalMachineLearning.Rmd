@@ -1,0 +1,74 @@
+---
+title: 'Assignment: Prediction Assignment Writeup'
+output: html_document
+---
+
+
+#### Prediction Challenge
+For the prediction of how welll individuals performed the assigned exercise six young health participants were asked to perform one set of 10 repetitions of the Unilateral Dumbbell Biceps Curl in five different fashions: exactly according to the specification (Class A), throwing the elbows to the front (Class B), lifting the dumbbell only halfway (Class C), lowering the dumbbell only halfway (Class D) and throwing the hips to the front (Class E).
+
+#### Report's Objective
+This report aims to use machine learning algoritmhs to predict the class of exercise the individuals was performing by using meaurements available from devices such as Jawbone Up, Nike FuelBand, and Fitbit.
+
+#### Phase 1: Data Cleaning 
+
+Training data was partitioned and preprocessed using the code described below. In brief, all samples (rows) with at least one NA were excluded from the analysis. Variables related to time and user information were excluded for a total of 51 variables and 19622 class measurements. Same variables were mainteined in the test data set (Validation dataset) to be used for predicting the 20 test cases provided.
+
+```{r}
+# Importind data
+
+pmlTrain <- read.csv("C:/Users/VR-Admin/Desktop/pml-training.csv", header=TRUE,na.strings=c("NA", "#DIV/0!"))
+pmlTest <- read.csv("C:/Users/VR-Admin/Desktop/pml-testing.csv", header=TRUE,na.strings=c("NA", "#DIV/0!"))
+
+```
+
+
+
+
+```{r}
+## NA exclusion for all available variables
+noNApmlTrain<-pmlTrain[, apply(pmlTrain, 2, function(x) !any(is.na(x)))] 
+dim(noNApmlTrain)
+```
+
+
+
+```{r}
+## variables with user information, time and undefined
+cleanpmlTrain<-noNApmlTrain[,-c(1:8)]
+dim(cleanpmlTrain)
+```
+
+```{r}
+## 20 test cases provided clean info - Validation data set
+cleanpmltest<-pmlTest[,names(cleanpmlTrain[,-52])]
+dim(cleanpmltest)
+```
+
+#### Phase 2: Data Partitioning
+Here we need to split the trainig data into training and validation set. 
+```{r}
+library(caret)
+inTrain<-createDataPartition(y=cleanpmlTrain$classe, p=0.75,list=F)
+training<-cleanpmlTrain[inTrain,] 
+test<-cleanpmlTrain[-inTrain,] 
+test<-cleanpmlTrain[-inTrain,] 
+#Training and test set dimensions
+dim(training)
+```
+#### Prediction and Results
+The functionality of Random Forest tree evaluated based on the cross validation partitioning method. Afterwards, based on the partitioned data the accuracy and out of sample error of the classifier was calculated. By using 51 predictors for five classes using cross-validation at a 5-fold an accuracy of 99.2% with a 95% CI [0.989-0.994] was achieved accompanied by a Kappa value of 0.99.
+
+```{r}
+set.seed(13333)
+fitControl2<-trainControl(method="cv", number=5, allowParallel=T, verbose=T)
+rffit<-train(classe~.,data=training, method="rf", trControl=fitControl2, verbose=F)
+predrf<-predict(rffit, newdata=test)
+confusionMatrix(predrf, test$classe)
+
+pred20<-predict(rffit, newdata=cleanpmltest)
+# Output for the prediction of the 20 cases provided
+pred20
+
+```
+
